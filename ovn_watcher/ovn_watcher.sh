@@ -80,6 +80,21 @@ END
 exit $OCF_SUCCESS
 }
 
+if [ -z $OCF_RESKEY_pmem_threshold ]; then
+    OCF_RESKEY_pmem_threshold="20"
+fi
+
+
+if [ -z $OCF_RESKEY_failing_periods ]; then
+    OCF_RESKEY_failing_periods="3"
+fi
+
+
+if [ -z $OCF_RESKEY_stable_periods ]; then
+    OCF_RESKEY_stable_periods="5"
+fi
+
+
 watcher_validate()
 {
 	:
@@ -87,6 +102,10 @@ watcher_validate()
 
 watcher_monitor()
 {
+    if ! [ -e /opt/pacemaker_extensions/ovn_watcher/active ]; then
+        exit $OCF_NOT_RUNNING
+    fi
+    
     PID=`pgrep ovn-northd`
     PMEM=`ps --no-headers -o pmem $PID | sed "s/\..*//"`
     if [ $PMEM -gt $OCF_RESKEY_pmem_threshold ]; then
@@ -112,7 +131,7 @@ watcher_monitor()
         fi
         COUNT=$(( $COUNT + 1 ))
     done
-    if [ $COUNT -eq $NEEDED_COUNT -a $IS_FAILING -eq 0 -a $line -gt $(($STABLE_MEM / $OCF_RESKEY_stable_periods)) ]; then
+    if [ $COUNT -eq $NEEDED_COUNT -a $IS_FAILING -eq 1 -a $($line * $OCF_RESKEY_stable_periods * 100) -gt $(($STABLE_MEM * 120)) ]; then
         return $OCF_ERR_GENERIC
     fi
 	return $OCF_SUCCESS
@@ -120,12 +139,14 @@ watcher_monitor()
 
 watcher_start()
 {
+    touch /opt/pacemaker_extensions/ovn_watcher/active
 	return $OCF_SUCCESS
 }
 
 
 watcher_stop()
 {
+    rm /opt/pacemaker_extensions/ovn_watcher/active
 	return $OCF_SUCCESS
 }
 
