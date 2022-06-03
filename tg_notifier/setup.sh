@@ -18,12 +18,22 @@ LOG_DIR='/opt/pacemaker_extensions/log'
 log(){
     if [ $VERBOSITY -gt $1 ]; then
         i=0
-        while [ i -lt $1 ]; do
+        while [ $i -lt $1 ]; do
             printf "\t"
             let "i=$i + 1"
         done
+        if [ $1 -eq 0 ]; then
+            echo -en "\033[32;1m[\u2714]\033[0m "
+        fi
         echo $2
     fi
+}
+
+error() {
+    echo -en "\033[31;1m[\u2718] "
+    echo -n $1
+    echo -e "\033[0m"
+    exit 1
 }
 
 while [[ $# -gt 0 ]]; do
@@ -83,18 +93,15 @@ done
 if [ $SETUP -eq 1 ]; then
     #Checking parameters
     if [[ ! $IP =~ ^(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$ ]]; then
-        echo "Invalid or unspecified IP"
-        exit 1
+        error "Invalid or unspecified IP"
     fi
     if [[ ! $PORT =~ ^([0-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9]|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$ ]]; then
-        echo "Invalid or unspecified port"
-        exit 1
+        error "Invalid or unspecified port"
     fi
 
     if [ -z  $CONFIG]; then
         if [ ! -f $CONFIG ]; then
-            echo 'Provided config not found'
-            exit 1
+            error 'Provided config not found'
         fi
     fi
 fi
@@ -102,8 +109,7 @@ fi
 # Setup
 pcs status >/dev/null 2>&1
 if [ $? -ne 0 ]; then
-    echo "Pacemaker is not running (try to start script with sudo)"
-    exit 1
+    error "Pacemaker is not running (try to start script with sudo)"
 fi
 
 # Assume we have root privileges
@@ -112,8 +118,7 @@ if [ $INSTALL -eq 1 ]; then
     # Master install
     mkdir -p $MASTER_PATH >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo 'Cannot create master directory'
-        exit 1
+        error 'Cannot create master directory'
     fi
 
     log 1 "Master path created"
@@ -121,8 +126,7 @@ if [ $INSTALL -eq 1 ]; then
     chown hacluster $MASTER_PATH >/dev/null 2>&1
     cp ./telegram_notifier_master.sh $MASTER_PATH/telegram_notifier_master >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo 'Cannot create master agent'
-        exit 1
+        error 'Cannot create master agent'
     fi
     chown hacluster $MASTER_PATH/telegram_notifier_master >/dev/null 2>&1
     chmod 755 $MASTER_PATH/telegram_notifier_master >/dev/null 2>&1
@@ -165,8 +169,7 @@ if [ $SETUP -eq 1 ]; then
     # Making log dir
     mkdir -p $LOG_DIR >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo 'Cannot create log directory'
-        exit 1
+        error 'Cannot create log directory'
     fi
     log 1 "Log directory created"
 
@@ -175,8 +178,7 @@ if [ $SETUP -eq 1 ]; then
     # Making pid dir
     mkdir -p $PID_DIR >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo 'Cannot create pid directory'
-        exit 1
+        error 'Cannot create pid directory'
     fi
     log 1 "Pid directory created"
 
@@ -188,20 +190,17 @@ if [ $SETUP -eq 1 ]; then
         # Making config directory
         mkdir -p $CONFIG_DIR >/dev/null 2>&1
         if [ $? -ne 0 ]; then
-            echo 'Cannot create config directory'
-            exit 1
+            error 'Cannot create config directory'
         fi
         log 1 "Config directory created"
 
         if [ -e $DEFAULT_CONFIG -a $FORCE -eq 0 ]; then
-            echo "Cannot create config by default path: file exists. Make config by yourself and provide it via --config or remove $CONFIG_DIR/telegram_notifier.ini and try again"
-            exit 1
+            error "Cannot create config by default path: file exists. Make config by yourself and provide it via --config or remove $CONFIG_DIR/telegram_notifier.ini and try again"
         fi
         rm $DEFAULT_CONFIG >/dev/null 2>&1
         touch $DEFAULT_CONFIG >/dev/null 2>&1
         if [ $? -ne 0 ]; then
-            echo 'Cannot create config'
-            exit 1
+            error 'Cannot create config'
         fi
         chmod 660 $DEFAULT_CONFIG >/dev/null 2>&1
 
@@ -268,8 +267,7 @@ if [ $SETUP -eq 1 ]; then
     # Virtual IP
     pcs resource create tg_ip ocf:heartbeat:IPaddr2 ip=$IP cidr_netmask=32 --disabled
     if [ $? -ne 0 ]; then
-        echo 'Cannot create virtual IP in Pacemaker'
-        exit 1
+        error 'Cannot create virtual IP in Pacemaker'
     fi
     log 1 "Virtual IP created"
 
@@ -277,28 +275,24 @@ if [ $SETUP -eq 1 ]; then
     pcs alert create path=./telegram_notifier_slave.sh id=tg_notifier_slave \
             description='Notifier slave for telegram notifier(check ocf:isp:telegram_notifier for further information)'
     if [ $? -ne 0 ]; then
-        echo 'Cannot create slave agent in Pacemaker'
-        exit 1
+        error 'Cannot create slave agent in Pacemaker'
     fi
 
     pcs alert recipient add tg_notifier_slave value="$IP $PORT" id=master
     if [ $? -ne 0 ]; then
-        echo 'Cannot link slave and master agents in Pacemaker'
-        exit 1
+        error 'Cannot link slave and master agents in Pacemaker'
     fi
     log 1 "Slave agent created"
 
     # Master configuring
     pcs resource create tg_notifier_master ocf:isp:telegram_notifier_master script=./telegram_notifier_master.py config=$CONFIG piddir=$PID_DIR
     if [ $? -ne 0 ]; then
-        echo 'Cannot create master agent in Pacemaker'
-        exit 1
+        error 'Cannot create master agent in Pacemaker'
     fi
 
     pcs resource group add tg_notifier tg_ip tg_notifier_master
     if [ $? -ne 0 ]; then
-        echo 'Cannot group IP and master agents in Pacemaker'
-        exit 1
+        error 'Cannot group IP and master agents in Pacemaker'
     fi
     log 1 "Master agent created"
 
