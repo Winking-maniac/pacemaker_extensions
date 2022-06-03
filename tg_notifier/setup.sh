@@ -99,7 +99,7 @@ if [ $SETUP -eq 1 ]; then
         error "Invalid or unspecified port"
     fi
 
-    if [ -z  $CONFIG]; then
+    if [ -z  $CONFIG ]; then
         if [ ! -f $CONFIG ]; then
             error 'Provided config not found'
         fi
@@ -115,6 +115,7 @@ fi
 # Assume we have root privileges
 
 if [ $INSTALL -eq 1 ]; then
+    log 0 "Installation started"
     # Master install
     mkdir -p $MASTER_PATH >/dev/null 2>&1
     if [ $? -ne 0 ]; then
