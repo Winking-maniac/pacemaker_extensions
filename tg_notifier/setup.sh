@@ -1,5 +1,5 @@
 #! /bin/bash
-SLAVE_PATH='/opt/pacemaker_extensions/alerts'
+# SLAVE_PATH='/opt/pacemaker_extensions/alerts'
 MASTER_PATH='/usr/lib/ocf/resource.d/isp'
 CONFIG_DIR='/opt/pacemaker_extensions/config'
 DEFAULT_CONFIG="$CONFIG_DIR/telegram_notifier.ini"
@@ -14,6 +14,8 @@ IP=''
 PORT=''
 PID_DIR='/opt/pacemaker_extensions/pids/telegram_notifier/'
 LOG_DIR='/opt/pacemaker_extensions/log'
+
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 
 log(){
     if [ $VERBOSITY -gt $1 ]; then
@@ -286,7 +288,7 @@ if [ $SETUP -eq 1 ]; then
     log 1 "Slave agent created"
 
     # Master configuring
-    pcs resource create tg_notifier_master ocf:isp:telegram_notifier_master script=./telegram_notifier_master.py config=$CONFIG piddir=$PID_DIR
+    pcs resource create tg_notifier_master ocf:isp:telegram_notifier_master script=$SCRIPT_DIR/telegram_notifier_master.py config=$CONFIG piddir=$PID_DIR --disabled
     if [ $? -ne 0 ]; then
         error 'Cannot create master agent in Pacemaker'
     fi
@@ -297,5 +299,7 @@ if [ $SETUP -eq 1 ]; then
     fi
     log 1 "Master agent created"
 
+    pcs resource enable tg_ip
+    pcs resource enable tg_notifier_master    
     log 0 "Configuration successful"
 fi
