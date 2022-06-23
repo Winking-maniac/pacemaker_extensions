@@ -160,6 +160,8 @@ def check_msg(msg):
         if msg_arr[6] not in [0, 7, 8]:
             if msg_arr[4] == "ovn-watcher":
                 send_ovn_watcher_message()
+            if msg_arr[4] == "tg_notifier_master":
+                return False
             return True
         else:
             return False
@@ -257,7 +259,7 @@ def send_cloud_active_message(reason_event):
     send(message=f'{config["General"]["Cloud"]}: fail. Overcoming actions started\n\nReason: `{reason_event}`')
 
 def send_cloud_stable_message():
-    send(message=f'{config["General"]["Cloud"]}: fail has been overcome\n\n')
+    send(message=f'{config["General"]["Cloud"]}: cluster stable\n\n')
     send_status()
 
 def send_ovn_watcher_message():
