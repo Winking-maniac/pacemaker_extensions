@@ -240,10 +240,10 @@ def send_status():
         if len(cur_msg) + len(line) + 1 < 4000:
             cur_msg += line + '\n'
         else:
-            send(message=f'`{cur_msg}`')
+            send(message=f'`{cur_msg}`', tag='status', check=False)
             cur_msg = ""
     if len(cur_msg) != 0:
-        send(message=f'`{cur_msg}`', tag='status')
+        send(message=f'`{cur_msg}`', tag='status', check=False)
 
 def send_start_message():
     send(message=f'{config["General"]["Cloud"]}: notifier started')
