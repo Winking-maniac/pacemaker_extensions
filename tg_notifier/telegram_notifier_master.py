@@ -27,16 +27,16 @@ def check_config(config_path):
 
     [General]
     Cloud = TEST
-    URL = https://api.telegram.org/bot863813709:AAGCWOY5n2o8aWeoMWSabi5QeLPcX7jCL1M/sendMessage
+    URL = https://api.telegram.org/bot<token>/sendMessage
     IP = 127.0.0.1
     port = 5555
+    cluster_check_interval = 1h
     log = /opt/pacemaker_extensions/logs/telegram_notifier.log
     loglevel = logging.DEBUG
 
     [Winking_maniac]
         telegram_id = 578240866
-    [varenie_vs]
-        telegram_id = 123456789
+        tag = status
     """
     try:
         config = configparser.ConfigParser()
@@ -158,6 +158,8 @@ def check_msg(msg):
         return False
     elif msg_arr[1] == "resource":
         if msg_arr[6] not in [0, 7, 8]:
+            if msg_arr[4] == "ovn-watcher":
+                send_ovn_watcher_message()
             return True
         else:
             return False
@@ -230,7 +232,7 @@ def serve(ip, port, piddir):
     send_stop_message()
 
 def send_status():
-    status = subprocess.run(["pcs", "status"], stdout=subprocess.PIPE, shell=True, encoding='ascii').stdout.split('Failed Resource Actions')[0].split('\n')
+    status = subprocess.run(["pcs status"], stdout=subprocess.PIPE, shell=True, encoding='ascii').stdout.split('Failed Resource Actions')[0].split('\n')
     cur_msg = ""
     for line in status:
         if len(cur_msg) + len(line) + 1 < 4000:
@@ -257,6 +259,9 @@ def send_cloud_active_message(reason_event):
 def send_cloud_stable_message():
     send(message=f'{config["General"]["Cloud"]}: fail has been overcome\n\n')
     send_status()
+
+def send_ovn_watcher_message():
+    send(message=f'{config["General"]["Cloud"]}: ovn_watcher found suspicious ovn-northd memory usage\n\n')
 
 def send_maintenance_msg(type, name="", message=""):
     if type == 'start':
