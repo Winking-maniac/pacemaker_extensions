@@ -1,4 +1,5 @@
 /config
 /log
-/pids
+/pid
 /ovn_watcher/active
+*.ini
