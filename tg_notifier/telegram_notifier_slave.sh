@@ -14,7 +14,7 @@
 # </configuration>
 
 send_message() {
-    printf "`date "+%D %T"`;$1" | telnet ${CRM_alert_recipient}
+    { printf "`date "+%D %T"`;$1"; sleep 1; } | telnet ${CRM_alert_recipient}
 }
 
 # No one will probably ever see this echo, unless they run the script manually.
