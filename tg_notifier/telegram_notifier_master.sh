@@ -109,7 +109,7 @@ tg_notifier_validate()
 
     $SCRIPT check $CONFIG
     if [ $? -eq 1 ]; then
-        exit $OCF_ERR_CONFIGURED
+        exit $OCF_ERR_ARGS
     fi
 }
 
