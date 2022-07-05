@@ -86,27 +86,6 @@ exit $OCF_SUCCESS
 
 tg_notifier_validate()
 {
-	if [ -n "$OCF_RESKEY_script" ]; then
-		SCRIPT=${OCF_RESKEY_script}
-	else
-		ocf_log info "Using default script name"
-	    SCRIPT="/opt/pacemaker_extensions/alerts/telegram_admin_alert.py"
-	fi
-
-	if [ -n "$OCF_RESKEY_config" ]; then
-		CONFIG=${OCF_RESKEY_config}
-	else
-		ocf_log info "Using default config name"
-	    CONFIG="/opt/pacemaker_extensions/config/telegram_admin_alert.ini"
-	fi
-
-    if [ -n "$OCF_RESKEY_piddir" ]; then
-		PIDDIR=${OCF_RESKEY_piddir}
-	else
-		ocf_log info "Using default piddir"
-	    PIDDIR="/opt/pacemaker_extensions/pids/telegram_notifier/"
-	fi
-
     $SCRIPT check $CONFIG
     if [ $? -eq 1 ]; then
         exit $OCF_ERR_ARGS
@@ -193,6 +172,27 @@ tg_notifier_stop()
 if [ $# -ne 1 ]; then
 	usage
 	exit $OCF_ERR_ARGS
+fi
+
+if [ -n "$OCF_RESKEY_script" ]; then
+    SCRIPT=${OCF_RESKEY_script}
+else
+    ocf_log info "Using default script name"
+    SCRIPT="/opt/pacemaker_extensions/alerts/telegram_admin_alert.py"
+fi
+
+if [ -n "$OCF_RESKEY_config" ]; then
+    CONFIG=${OCF_RESKEY_config}
+else
+    ocf_log info "Using default config name"
+    CONFIG="/opt/pacemaker_extensions/config/telegram_admin_alert.ini"
+fi
+
+if [ -n "$OCF_RESKEY_piddir" ]; then
+    PIDDIR=${OCF_RESKEY_piddir}
+else
+    ocf_log info "Using default piddir"
+    PIDDIR="/opt/pacemaker_extensions/pids/telegram_notifier/"
 fi
 
 
