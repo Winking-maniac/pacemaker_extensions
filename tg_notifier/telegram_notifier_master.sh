@@ -195,10 +195,10 @@ if [ $# -ne 1 ]; then
 	exit $OCF_ERR_ARGS
 fi
 
-tg_notifier_validate
 
 case $__OCF_ACTION in
 	start)
+        tg_notifier_validate
         tg_notifier_start
 		;;
 
@@ -211,6 +211,7 @@ case $__OCF_ACTION in
 		;;
 
 	validate-all)
+        tg_notifier_validate
 		;;
 
 	meta-data)
