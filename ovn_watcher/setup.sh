@@ -18,5 +18,5 @@ if [ -n "$1" ]; then
 fi
 
 pcs resource create ovn-watcher ocf:isp:ovn_watcher pmem_threshold=20 stable_periods=5 failing_periods=3 op monitor interval=3600s on-fail=block --disabled
-pcs constraint colocation add ovn-dbs-bundle with Master ovn-watcher INFINITY
+pcs constraint colocation add ovn-watcher with master ovn-dbs-bundle INFINITY
 pcs resource enable ovn-watcher
