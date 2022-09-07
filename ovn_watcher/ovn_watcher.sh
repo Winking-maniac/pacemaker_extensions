@@ -130,7 +130,6 @@ watcher_monitor()
     LAST_MEM=0
     tail -n $READ_COUNT /opt/pacemaker_extensions/log/ovn_watcher.log | while read useless1 useless2 line
     do
-        $line=
         if [ $COUNT -lt $OCF_RESKEY_stable_periods ]; then
             let "STABLE_MEM = $STABLE_MEM + $line"
             LAST_MEM=$line
