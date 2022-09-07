@@ -105,7 +105,11 @@ watcher_monitor()
     if ! [ -e /opt/pacemaker_extensions/ovn_watcher/active ]; then
         exit $OCF_NOT_RUNNING
     fi
-    
+    cat /opt/pacemaker_extensions/ovn_watcher/active | read CUR_HOURS_WORKING
+    if [ -z $CUR_HOURS_WORKING ]; then
+	CUR_HOURS_WORKING=0
+    fi
+    printf "%d" $(( CUR_HOURS_WORKING + 1 )) >> /opt/pacemaker_extensions/ovn_watcher/active  
     PID=`pgrep ovn-northd`
     PMEM=`ps --no-headers -o pmem $PID | sed "s/\..*//"`
     if [ $PMEM -gt $OCF_RESKEY_pmem_threshold ]; then
@@ -113,14 +117,20 @@ watcher_monitor()
     fi
 
     let "NEEDED_COUNT = $OCF_RESKEY_stable_periods + $OCF_RESKEY_failing_periods + 1"
-    printf "%d\n" `ps --no-headers -o vsz $PID` >> /opt/pacemaker_extensions/log/ovn_watcher.log
+    if [ $NEEDED_COUNT -gt $CUR_HOURS_WORKING ]; then
+        $READ_COUNT=$CUR_HOURS_WORKING
+    else
+        $READ_COUNT=$NEEDED_COUNT
+    fi
+    printf "%s    %d\n" "`date +"%F %R:%S"`" `ps --no-headers -o vsz $PID` >> /opt/pacemaker_extensions/log/ovn_watcher.log
 
     COUNT=0
     STABLE_MEM=0
     IS_FAILING=1
     LAST_MEM=0
-    tail -n $NEEDED_COUNT /opt/pacemaker_extensions/log/ovn_watcher.log | while read line
+    tail -n $READ_COUNT /opt/pacemaker_extensions/log/ovn_watcher.log | while read useless1 useless2 line
     do
+        $line=
         if [ $COUNT -lt $OCF_RESKEY_stable_periods ]; then
             let "STABLE_MEM = $STABLE_MEM + $line"
             LAST_MEM=$line
